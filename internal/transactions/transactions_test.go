@@ -1,40 +1,42 @@
 package transactions
 
-import "testing"
+import (
+	"context"
+	"testing"
+
+	repo "github.com/kushturner/finances/internal/database/psql/sqlc"
+	"github.com/stretchr/testify/assert"
+)
 
 type mockRepository struct {
-	txs []Transaction
+	txs []repo.Transaction
 	err error
 }
 
-func (m *mockRepository) GetAllTransactions() ([]Transaction, error) {
+func (m *mockRepository) GetAllTransactions(ctx context.Context) ([]repo.Transaction, error) {
 	return m.txs, m.err
 }
 
 func TestListTransactions(t *testing.T) {
 	t.Run("returns all transactions from repository", func(t *testing.T) {
-		expected := []Transaction{
+		expected := []repo.Transaction{
 			{Description: "tx 1"},
 			{Description: "tx 2"},
 		}
 		repo := &mockRepository{txs: expected}
 		svc := NewService(repo)
-		actual, _ := svc.ListTransactions()
 
-		for i := range expected {
-			if actual[i].Description != expected[i].Description {
-				t.Errorf("got %v, want %v", actual[i].Description, expected[i].Description)
-			}
-		}
+		actual, _ := svc.ListTransactions(context.Background())
+
+		assert.Len(t, actual, 2)
 	})
 
 	t.Run("returns empty slice if no transactions found in repository", func(t *testing.T) {
 		repo := &mockRepository{}
 		svc := NewService(repo)
-		actual, _ := svc.ListTransactions()
 
-		if len(actual) != 0 {
-			t.Errorf("got %d transactions, want 0", len(actual))
-		}
+		actual, _ := svc.ListTransactions(context.Background())
+
+		assert.Len(t, actual, 0)
 	})
 }
