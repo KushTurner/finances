@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Rhymond/go-money"
 	repo "github.com/kushturner/finances/internal/database/psql/sqlc"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,6 +16,11 @@ type mockRepository struct {
 
 func (m *mockRepository) GetAllTransactions(ctx context.Context) ([]repo.Transaction, error) {
 	return m.txs, m.err
+}
+
+func (m *mockRepository) AddTransaction(ctx context.Context, arg repo.AddTransactionParams) (repo.Transaction, error) {
+	m.txs = append(m.txs, repo.Transaction{})
+	return repo.Transaction{}, nil
 }
 
 func TestListTransactions(t *testing.T) {
@@ -38,5 +44,19 @@ func TestListTransactions(t *testing.T) {
 		actual, _ := svc.ListTransactions(context.Background())
 
 		assert.Len(t, actual, 0)
+	})
+}
+
+func TestAddTransaction(t *testing.T) {
+	t.Run("adds multiple transactions to the repository", func(t *testing.T) {
+		repo := &mockRepository{}
+		svc := NewService(repo)
+
+		tx := Transaction{Description: "new tx", Out: money.New(1000, "GBP"), In: money.New(0, "GBP")}
+		tx2 := Transaction{Description: "new tx 2", Out: money.New(2000, "GBP"), In: money.New(0, "GBP")}
+
+		svc.AddTransactions(context.Background(), []Transaction{tx, tx2})
+
+		assert.Len(t, repo.txs, 2)
 	})
 }
