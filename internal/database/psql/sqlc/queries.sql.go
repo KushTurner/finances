@@ -7,7 +7,43 @@ package repo
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const addTransaction = `-- name: AddTransaction :one
+INSERT INTO transactions (date, description, amount_out, amount_in, currency)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, date, description, amount_out, amount_in, currency
+`
+
+type AddTransactionParams struct {
+	Date        pgtype.Date
+	Description string
+	AmountOut   pgtype.Int8
+	AmountIn    pgtype.Int8
+	Currency    string
+}
+
+func (q *Queries) AddTransaction(ctx context.Context, arg AddTransactionParams) (Transaction, error) {
+	row := q.db.QueryRow(ctx, addTransaction,
+		arg.Date,
+		arg.Description,
+		arg.AmountOut,
+		arg.AmountIn,
+		arg.Currency,
+	)
+	var i Transaction
+	err := row.Scan(
+		&i.ID,
+		&i.Date,
+		&i.Description,
+		&i.AmountOut,
+		&i.AmountIn,
+		&i.Currency,
+	)
+	return i, err
+}
 
 const getAllTransactions = `-- name: GetAllTransactions :many
 SELECT id, date, description, amount_out, amount_in, currency FROM transactions

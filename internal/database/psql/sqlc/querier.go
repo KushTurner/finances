@@ -9,6 +9,7 @@ import (
 )
 
 type Querier interface {
+	AddTransaction(ctx context.Context, arg AddTransactionParams) (Transaction, error)
 	GetAllTransactions(ctx context.Context) ([]Transaction, error)
 }
 

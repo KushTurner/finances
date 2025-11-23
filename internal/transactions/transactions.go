@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Rhymond/go-money"
+	"github.com/jackc/pgx/v5/pgtype"
 	repo "github.com/kushturner/finances/internal/database/psql/sqlc"
 )
 
@@ -17,14 +18,20 @@ type Transaction struct {
 
 type Service interface {
 	ListTransactions(ctx context.Context) ([]Transaction, error)
+	AddTransactions(ctx context.Context, txs []Transaction) ([]Transaction, error)
 }
 
 type repository interface {
 	GetAllTransactions(ctx context.Context) ([]repo.Transaction, error)
+	AddTransaction(ctx context.Context, arg repo.AddTransactionParams) (repo.Transaction, error)
 }
 
 type service struct {
 	repo repository
+}
+
+func NewService(repo repository) Service {
+	return &service{repo: repo}
 }
 
 func (s *service) ListTransactions(ctx context.Context) ([]Transaction, error) {
@@ -42,8 +49,26 @@ func (s *service) ListTransactions(ctx context.Context) ([]Transaction, error) {
 	return result, nil
 }
 
-func NewService(repo repository) Service {
-	return &service{repo: repo}
+func (s *service) AddTransactions(ctx context.Context, txs []Transaction) ([]Transaction, error) {
+	var result []Transaction
+	for _, tx := range txs {
+
+		arg := repo.AddTransactionParams{
+			Date:        pgtype.Date{Time: tx.Date, Valid: true},
+			Description: tx.Description,
+			AmountOut:   pgtype.Int8{Int64: tx.Out.Amount(), Valid: true},
+			AmountIn:    pgtype.Int8{Int64: tx.In.Amount(), Valid: true},
+			Currency:    tx.Out.Currency().Code,
+		}
+
+		_, err := s.repo.AddTransaction(ctx, arg)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, tx)
+	}
+
+	return result, nil
 }
 
 func toTransaction(tx repo.Transaction) Transaction {

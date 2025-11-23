@@ -20,6 +20,11 @@ func (m *mockService) ListTransactions(ctx context.Context) ([]transactions.Tran
 	return m.txs, m.err
 }
 
+func (m *mockService) AddTransactions(ctx context.Context, txs []transactions.Transaction) ([]transactions.Transaction, error) {
+	m.txs = append(m.txs, txs...)
+	return txs, m.err
+}
+
 func TestListTransactions(t *testing.T) {
 	t.Run("can get all transactions", func(t *testing.T) {
 		testDate := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)

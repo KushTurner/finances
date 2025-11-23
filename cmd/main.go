@@ -26,7 +26,7 @@ func main() {
 	logger := slog.Default()
 	slog.SetDefault(logger)
 
-	conn, _ := pgxpool.New(ctx, env.Get("", "postgres://postgres:postgres@localhost:5432/postgres"))
+	conn, _ := pgxpool.New(ctx, env.Get("", "postgres://postgres:postgres@localhost:5401/postgres"))
 	defer conn.Close()
 
 	goose.SetBaseFS(psql.Migrations)
