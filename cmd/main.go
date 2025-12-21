@@ -12,6 +12,7 @@ import (
 	repo "github.com/kushturner/finances/internal/database/psql/sqlc"
 	"github.com/kushturner/finances/internal/env"
 	"github.com/kushturner/finances/internal/http/handlers"
+	"github.com/kushturner/finances/internal/statements"
 	"github.com/kushturner/finances/internal/transactions"
 	"github.com/pressly/goose/v3"
 )
@@ -29,6 +30,8 @@ func main() {
 	conn, _ := pgxpool.New(ctx, env.Get("", "postgres://postgres:postgres@localhost:5401/postgres"))
 	defer conn.Close()
 
+	llm := statements.NewLLMClient(env.Get("OPENAPI_KEY", ""))
+
 	goose.SetBaseFS(psql.Migrations)
 
 	if err := goose.SetDialect(env.Get("", "postgres")); err != nil {
@@ -43,8 +46,9 @@ func main() {
 	}
 
 	txSvc := transactions.NewService(repo.New(conn))
-	txHandler := handlers.NewTransactionHandler(txSvc)
+	txHandler := handlers.NewTransactionHandler(txSvc, *llm)
 	r.Get("/transactions", txHandler.ListTransactions)
+	r.Post("/statement", txHandler.AddTransactions)
 
 	startApi(r, ":3000")
 }

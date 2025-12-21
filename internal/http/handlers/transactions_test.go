@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Rhymond/go-money"
+	"github.com/kushturner/finances/internal/statements"
 	"github.com/kushturner/finances/internal/transactions"
 	"github.com/stretchr/testify/assert"
 )
@@ -35,7 +36,7 @@ func TestListTransactions(t *testing.T) {
 			In:          money.New(0, "GBP"),
 		}
 		svc := &mockService{txs: []transactions.Transaction{mockTx}}
-		handler := NewTransactionHandler(svc)
+		handler := NewTransactionHandler(svc, statements.LLMClient{})
 
 		expected := `[{"date":"2024-01-15T00:00:00Z","description":"Chrome Hearts Ring","out":"£267.00","in":"£0.00"}]`
 
@@ -46,7 +47,7 @@ func TestListTransactions(t *testing.T) {
 
 	t.Run("returns empty list if no transactions exist", func(t *testing.T) {
 		svc := &mockService{}
-		handler := NewTransactionHandler(svc)
+		handler := NewTransactionHandler(svc, statements.LLMClient{})
 
 		expected := `[]`
 
