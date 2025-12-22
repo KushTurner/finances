@@ -12,9 +12,9 @@ import (
 )
 
 const addTransaction = `-- name: AddTransaction :one
-INSERT INTO transactions (date, description, amount_out, amount_in, currency)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, date, description, amount_out, amount_in, currency
+INSERT INTO transactions (date, description, amount_out, amount_in, currency, bank)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, date, description, amount_out, amount_in, currency, bank
 `
 
 type AddTransactionParams struct {
@@ -23,6 +23,7 @@ type AddTransactionParams struct {
 	AmountOut   pgtype.Int8
 	AmountIn    pgtype.Int8
 	Currency    string
+	Bank        pgtype.Text
 }
 
 func (q *Queries) AddTransaction(ctx context.Context, arg AddTransactionParams) (Transaction, error) {
@@ -32,6 +33,7 @@ func (q *Queries) AddTransaction(ctx context.Context, arg AddTransactionParams) 
 		arg.AmountOut,
 		arg.AmountIn,
 		arg.Currency,
+		arg.Bank,
 	)
 	var i Transaction
 	err := row.Scan(
@@ -41,12 +43,13 @@ func (q *Queries) AddTransaction(ctx context.Context, arg AddTransactionParams) 
 		&i.AmountOut,
 		&i.AmountIn,
 		&i.Currency,
+		&i.Bank,
 	)
 	return i, err
 }
 
 const getAllTransactions = `-- name: GetAllTransactions :many
-SELECT id, date, description, amount_out, amount_in, currency FROM transactions
+SELECT id, date, description, amount_out, amount_in, currency, bank FROM transactions
 `
 
 func (q *Queries) GetAllTransactions(ctx context.Context) ([]Transaction, error) {
@@ -65,6 +68,7 @@ func (q *Queries) GetAllTransactions(ctx context.Context) ([]Transaction, error)
 			&i.AmountOut,
 			&i.AmountIn,
 			&i.Currency,
+			&i.Bank,
 		); err != nil {
 			return nil, err
 		}

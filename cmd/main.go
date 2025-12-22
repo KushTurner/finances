@@ -27,7 +27,7 @@ func main() {
 	logger := slog.Default()
 	slog.SetDefault(logger)
 
-	conn, _ := pgxpool.New(ctx, env.Get("", "postgres://postgres:postgres@localhost:5401/postgres"))
+	conn, _ := pgxpool.New(ctx, env.Get("FINANCES_DATABASE_URL", "postgres://postgres:postgres@localhost:5432/postgres"))
 	defer conn.Close()
 
 	llm := statements.NewLLMClient(env.Get("OPENAPI_KEY", ""))

@@ -38,7 +38,7 @@ func TestListTransactions(t *testing.T) {
 		svc := &mockService{txs: []transactions.Transaction{mockTx}}
 		handler := NewTransactionHandler(svc, statements.LLMClient{})
 
-		expected := `[{"date":"2024-01-15T00:00:00Z","description":"Chrome Hearts Ring","out":"£267.00","in":"£0.00"}]`
+		expected := `[{"date":"2024-01-15T00:00:00Z","description":"Chrome Hearts Ring","out":"£267.00","in":"£0.00", "bank":""}]`
 
 		actual := assert.HTTPBody(handler.ListTransactions, http.MethodGet, "/transactions", nil)
 

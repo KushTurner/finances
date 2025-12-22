@@ -14,6 +14,7 @@ type Transaction struct {
 	Description string
 	Out         *money.Money
 	In          *money.Money
+	Bank        string
 }
 
 type Service interface {
@@ -59,6 +60,7 @@ func (s *service) AddTransactions(ctx context.Context, txs []Transaction) ([]Tra
 			AmountOut:   pgtype.Int8{Int64: tx.Out.Amount(), Valid: true},
 			AmountIn:    pgtype.Int8{Int64: tx.In.Amount(), Valid: true},
 			Currency:    tx.Out.Currency().Code,
+			Bank:        pgtype.Text{String: tx.Bank, Valid: true},
 		}
 
 		_, err := s.repo.AddTransaction(ctx, arg)
@@ -77,5 +79,6 @@ func toTransaction(tx repo.Transaction) Transaction {
 		Description: tx.Description,
 		Out:         money.New(tx.AmountOut.Int64, tx.Currency),
 		In:          money.New(tx.AmountIn.Int64, tx.Currency),
+		Bank:        tx.Bank.String,
 	}
 }

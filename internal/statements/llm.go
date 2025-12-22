@@ -24,6 +24,7 @@ type transactionSchema struct {
 	Out         int64     `json:"out"`
 	In          int64     `json:"in"`
 	Currency    string    `json:"currency"`
+	Bank        string    `json:"bank"`
 }
 
 type statementSchema struct {
@@ -61,7 +62,7 @@ var schemaParams = responses.ResponseFormatTextJSONSchemaConfigParam{
 }
 
 func (c *LLMClient) ReadStatement(ctx context.Context, base64Statement string) ([]transactions.Transaction, error) {
-	prompt := `Extract all transactions from the following bank statement. For each transaction, provide the date using ISO 8601 format (use the primary transaction date shown in the Date column, NOT the Effective Date), description (include the whole description), amount out in its smallest unit (0 if empty), amount in in its smallest unit (0 if empty) and currency.`
+	prompt := `Extract all transactions from the following bank statement. For each transaction, provide the date using ISO 8601 format (use the primary transaction date shown in the Date column, NOT the Effective Date), description (include the whole description), amount out in its smallest unit (0 if empty), amount in in its smallest unit (0 if empty), currency and bank.`
 
 	response, err := c.client.Responses.New(ctx, responses.ResponseNewParams{
 		Model: openai.ChatModelGPT4o,
@@ -125,5 +126,6 @@ func toTransaction(tx transactionSchema) transactions.Transaction {
 		Description: tx.Description,
 		Out:         money.New(tx.Out, tx.Currency),
 		In:          money.New(tx.In, tx.Currency),
+		Bank:        tx.Bank,
 	}
 }

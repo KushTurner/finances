@@ -15,4 +15,5 @@ type Transaction struct {
 	AmountOut   pgtype.Int8
 	AmountIn    pgtype.Int8
 	Currency    string
+	Bank        pgtype.Text
 }
