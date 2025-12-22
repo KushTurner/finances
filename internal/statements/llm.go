@@ -58,11 +58,10 @@ var schemaParams = responses.ResponseFormatTextJSONSchemaConfigParam{
 	Name:        "statement",
 	Description: openai.String("bank statement transactions"),
 	Schema:      StatementsResponseSchema,
-	Strict:      openai.Bool(true),
 }
 
 func (c *LLMClient) ReadStatement(ctx context.Context, base64Statement string) ([]transactions.Transaction, error) {
-	prompt := `Extract all transactions from the following bank statement. For each transaction, provide the date using ISO 8601 format (use the primary transaction date shown in the Date column, NOT the Effective Date), description (include the whole description), amount out in its smallest unit (0 if empty), amount in in its smallest unit (0 if empty), currency and bank.`
+	prompt := `Extract transactions. Use Date column (not Effective Date) in ISO 8601. Include full descriptions. Convert amounts to smallest currency unit (0 if empty).`
 
 	response, err := c.client.Responses.New(ctx, responses.ResponseNewParams{
 		Model: openai.ChatModelGPT4o,
