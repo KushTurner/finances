@@ -17,6 +17,7 @@ type transactionResponse struct {
 	Description string    `json:"description"`
 	Out         string    `json:"out"`
 	In          string    `json:"in"`
+	Bank        string    `json:"bank"`
 }
 
 type transactionHandler struct {
@@ -76,5 +77,6 @@ func toTransactionResponse(tx transactions.Transaction) transactionResponse {
 		Description: tx.Description,
 		Out:         tx.Out.Display(),
 		In:          tx.In.Display(),
+		Bank:        tx.Bank,
 	}
 }
