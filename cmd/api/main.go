@@ -29,7 +29,8 @@ func main() {
 	defer conn.Close(context.Background())
 	log.Println("Connected to database")
 
-	r := server.NewRouter()
+	querier := db.New(conn)
+	r := server.NewRouter(querier)
 
 	log.Println("Starting server on :8080")
 	if err := http.ListenAndServe(":8080", r); err != nil {

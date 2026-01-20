@@ -3,6 +3,7 @@ module github.com/kushturner/finances
 go 1.24.2
 
 require (
+	github.com/Rhymond/go-money v1.0.15
 	github.com/go-chi/chi/v5 v5.2.4
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/pressly/goose/v3 v3.26.0
