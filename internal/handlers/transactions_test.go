@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,12 +14,20 @@ import (
 )
 
 type mockTransactionService struct {
-	transactions []transaction.Transaction
-	err          error
+	transactions      []transaction.Transaction
+	err               error
+	importFromCSVFunc func(ctx context.Context, parser transaction.Parser, csvFile io.Reader) (int64, error)
 }
 
 func (m *mockTransactionService) GetAllTransactions(ctx context.Context) ([]transaction.Transaction, error) {
 	return m.transactions, m.err
+}
+
+func (m *mockTransactionService) ImportFromCSV(ctx context.Context, parser transaction.Parser, csvFile io.Reader) (int64, error) {
+	if m.importFromCSVFunc != nil {
+		return m.importFromCSVFunc(ctx, parser, csvFile)
+	}
+	return 0, nil
 }
 
 func TestListTransactions_EmptyList(t *testing.T) {

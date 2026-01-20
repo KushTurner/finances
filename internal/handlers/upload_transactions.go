@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/kushturner/finances/internal/upload"
+	"github.com/kushturner/finances/internal/csvparser"
+	"github.com/kushturner/finances/internal/transaction"
 )
 
 type UploadResponse struct {
@@ -18,7 +19,7 @@ type ErrorResponse struct {
 	Details string `json:"details,omitempty"`
 }
 
-func NewUploadTransactionsHandler(uploadService upload.Service) http.HandlerFunc {
+func NewUploadTransactionsHandler(transactionService transaction.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseMultipartForm(10 << 20); err != nil {
 			respondWithError(w, http.StatusBadRequest, "Failed to parse multipart form", err.Error())
@@ -31,6 +32,12 @@ func NewUploadTransactionsHandler(uploadService upload.Service) http.HandlerFunc
 			return
 		}
 
+		parser, err := csvparser.GetParser(bankType)
+		if err != nil {
+			respondWithError(w, http.StatusBadRequest, "Invalid bank type", err.Error())
+			return
+		}
+
 		file, _, err := r.FormFile("file")
 		if err != nil {
 			respondWithError(w, http.StatusBadRequest, "Failed to get file from form", err.Error())
@@ -38,7 +45,7 @@ func NewUploadTransactionsHandler(uploadService upload.Service) http.HandlerFunc
 		}
 		defer file.Close()
 
-		count, err := uploadService.UploadTransactions(r.Context(), bankType, file)
+		count, err := transactionService.ImportFromCSV(r.Context(), parser, file)
 		if err != nil {
 			statusCode := determineStatusCode(err)
 			respondWithError(w, statusCode, "Upload failed", err.Error())
@@ -50,13 +57,10 @@ func NewUploadTransactionsHandler(uploadService upload.Service) http.HandlerFunc
 }
 
 func determineStatusCode(err error) int {
-	if errors.Is(err, upload.ErrInvalidBankType) {
-		return http.StatusBadRequest
-	}
-	if errors.Is(err, upload.ErrParseFailure) {
+	if errors.Is(err, transaction.ErrParseFailure) {
 		return http.StatusUnprocessableEntity
 	}
-	if errors.Is(err, upload.ErrDatabaseFailure) {
+	if errors.Is(err, transaction.ErrDatabaseFailure) {
 		return http.StatusInternalServerError
 	}
 	return http.StatusInternalServerError
