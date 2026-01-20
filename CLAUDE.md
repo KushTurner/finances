@@ -11,6 +11,8 @@ This project is a finances tracker that allows me to upload my bank statements a
 # Code Conventions
 - Use interfaces for dependency injection
 - Use Go base interfaces as much as possible
+- Start simple and build up
+- Avoid comments, the code should be self-explanatory
 
 # Testing
 - Many Unit Tests
