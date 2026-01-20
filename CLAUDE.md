@@ -5,6 +5,10 @@ This project is a finances tracker that allows me to upload my bank statements a
 - Golang
 - PostgreSQL
 
+# Running application
+- Run `go run cmd/api/main.go` to start the application.
+- Run `go test ./...` to run the tests.
+
 # Architecture
 - Hexagonal Architecture but with a focus on simplicity and readability.
 - I don't like directly naming folders ports and adapters

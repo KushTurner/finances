@@ -7,47 +7,23 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/kushturner/finances/internal/db"
+	"github.com/Rhymond/go-money"
+	"github.com/kushturner/finances/internal/transaction"
 	"github.com/stretchr/testify/assert"
 )
 
-type mockQuerier struct {
-	transactions []db.Transaction
+type mockTransactionService struct {
+	transactions []transaction.Transaction
 	err          error
 }
 
-func (m *mockQuerier) ListTransactions(ctx context.Context) ([]db.Transaction, error) {
+func (m *mockTransactionService) GetAllTransactions(ctx context.Context) ([]transaction.Transaction, error) {
 	return m.transactions, m.err
 }
 
-func (m *mockQuerier) GetTransaction(ctx context.Context, id int32) (db.Transaction, error) {
-	return db.Transaction{}, nil
-}
-
-func (m *mockQuerier) CreateTransaction(ctx context.Context, arg db.CreateTransactionParams) (db.Transaction, error) {
-	return db.Transaction{}, nil
-}
-
-func (m *mockQuerier) UpdateTransaction(ctx context.Context, arg db.UpdateTransactionParams) (db.Transaction, error) {
-	return db.Transaction{}, nil
-}
-
-func (m *mockQuerier) DeleteTransaction(ctx context.Context, id int32) error {
-	return nil
-}
-
-func (m *mockQuerier) CreateTransactionsBatch(ctx context.Context, arg []db.CreateTransactionsBatchParams) (int64, error) {
-	return 0, nil
-}
-
-func (m *mockQuerier) WithTx(tx interface{}) db.Querier {
-	return m
-}
-
 func TestListTransactions_EmptyList(t *testing.T) {
-	mock := &mockQuerier{
-		transactions: []db.Transaction{},
+	mock := &mockTransactionService{
+		transactions: []transaction.Transaction{},
 		err:          nil,
 	}
 
@@ -64,29 +40,27 @@ func TestListTransactions_EmptyList(t *testing.T) {
 
 func TestListTransactions_MultipleTransactions(t *testing.T) {
 	category := "groceries"
-	mock := &mockQuerier{
-		transactions: []db.Transaction{
+	mock := &mockTransactionService{
+		transactions: []transaction.Transaction{
 			{
 				ID:          1,
-				Date:        pgtype.Date{Time: time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC), Valid: true},
+				Date:        time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC),
 				Description: "Grocery store",
-				Amount:      5000,
-				Currency:    "USD",
+				Amount:      money.New(5000, "USD"),
 				Bank:        "Chase",
-				Category:    pgtype.Text{String: category, Valid: true},
-				CreatedAt:   pgtype.Timestamp{Time: time.Now(), Valid: true},
-				UpdatedAt:   pgtype.Timestamp{Time: time.Now(), Valid: true},
+				Category:    &category,
+				CreatedAt:   time.Now(),
+				UpdatedAt:   time.Now(),
 			},
 			{
 				ID:          2,
-				Date:        pgtype.Date{Time: time.Date(2024, 1, 16, 0, 0, 0, 0, time.UTC), Valid: true},
+				Date:        time.Date(2024, 1, 16, 0, 0, 0, 0, time.UTC),
 				Description: "Coffee shop",
-				Amount:      500,
-				Currency:    "GBP",
+				Amount:      money.New(500, "GBP"),
 				Bank:        "Barclays",
-				Category:    pgtype.Text{String: "", Valid: false},
-				CreatedAt:   pgtype.Timestamp{Time: time.Now(), Valid: true},
-				UpdatedAt:   pgtype.Timestamp{Time: time.Now(), Valid: true},
+				Category:    nil,
+				CreatedAt:   time.Now(),
+				UpdatedAt:   time.Now(),
 			},
 		},
 		err: nil,
@@ -123,7 +97,7 @@ func TestListTransactions_MultipleTransactions(t *testing.T) {
 }
 
 func TestListTransactions_DatabaseError(t *testing.T) {
-	mock := &mockQuerier{
+	mock := &mockTransactionService{
 		transactions: nil,
 		err:          assert.AnError,
 	}
@@ -139,29 +113,27 @@ func TestListTransactions_DatabaseError(t *testing.T) {
 
 func TestListTransactions_CategoryNullable(t *testing.T) {
 	category := "transport"
-	mock := &mockQuerier{
-		transactions: []db.Transaction{
+	mock := &mockTransactionService{
+		transactions: []transaction.Transaction{
 			{
 				ID:          1,
-				Date:        pgtype.Date{Time: time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC), Valid: true},
+				Date:        time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC),
 				Description: "With category",
-				Amount:      1000,
-				Currency:    "USD",
+				Amount:      money.New(1000, "USD"),
 				Bank:        "Test Bank",
-				Category:    pgtype.Text{String: category, Valid: true},
-				CreatedAt:   pgtype.Timestamp{Time: time.Now(), Valid: true},
-				UpdatedAt:   pgtype.Timestamp{Time: time.Now(), Valid: true},
+				Category:    &category,
+				CreatedAt:   time.Now(),
+				UpdatedAt:   time.Now(),
 			},
 			{
 				ID:          2,
-				Date:        pgtype.Date{Time: time.Date(2024, 1, 16, 0, 0, 0, 0, time.UTC), Valid: true},
+				Date:        time.Date(2024, 1, 16, 0, 0, 0, 0, time.UTC),
 				Description: "Without category",
-				Amount:      2000,
-				Currency:    "USD",
+				Amount:      money.New(2000, "USD"),
 				Bank:        "Test Bank",
-				Category:    pgtype.Text{String: "", Valid: false},
-				CreatedAt:   pgtype.Timestamp{Time: time.Now(), Valid: true},
-				UpdatedAt:   pgtype.Timestamp{Time: time.Now(), Valid: true},
+				Category:    nil,
+				CreatedAt:   time.Now(),
+				UpdatedAt:   time.Now(),
 			},
 		},
 		err: nil,
