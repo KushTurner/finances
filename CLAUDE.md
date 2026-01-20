@@ -6,7 +6,7 @@ This project is a finances tracker that allows me to upload my bank statements a
 - PostgreSQL
 
 # Architecture
-- Hexagonal Architecture
+- Hexagonal Architecture but with a focus on simplicity and readability.
 
 # Code Conventions
 - Use interfaces for dependency injection
