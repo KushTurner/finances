@@ -35,6 +35,17 @@ func TransactionToDB(tx Transaction) db.CreateTransactionParams {
 	}
 }
 
+func TransactionToBatchDB(tx Transaction) db.CreateTransactionsBatchParams {
+	return db.CreateTransactionsBatchParams{
+		Date:        pgtype.Date{Time: tx.Date, Valid: true},
+		Description: tx.Description,
+		Amount:      tx.Amount.Amount(),
+		Currency:    tx.Amount.Currency().Code,
+		Bank:        tx.Bank,
+		Category:    pgtype.Text{String: stringOrEmpty(tx.Category), Valid: tx.Category != nil},
+	}
+}
+
 func stringOrEmpty(s *string) string {
 	if s == nil {
 		return ""

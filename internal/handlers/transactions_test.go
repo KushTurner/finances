@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -38,6 +37,14 @@ func (m *mockQuerier) DeleteTransaction(ctx context.Context, id int32) error {
 	return nil
 }
 
+func (m *mockQuerier) CreateTransactionsBatch(ctx context.Context, arg []db.CreateTransactionsBatchParams) (int64, error) {
+	return 0, nil
+}
+
+func (m *mockQuerier) WithTx(tx interface{}) db.Querier {
+	return m
+}
+
 func TestListTransactions_EmptyList(t *testing.T) {
 	mock := &mockQuerier{
 		transactions: []db.Transaction{},
@@ -52,11 +59,7 @@ func TestListTransactions_EmptyList(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "application/json", rec.Header().Get("Content-Type"))
-
-	var responses []TransactionResponse
-	err := json.NewDecoder(rec.Body).Decode(&responses)
-	assert.NoError(t, err)
-	assert.Equal(t, 0, len(responses))
+	assert.JSONEq(t, "[]", rec.Body.String())
 }
 
 func TestListTransactions_MultipleTransactions(t *testing.T) {
@@ -97,21 +100,26 @@ func TestListTransactions_MultipleTransactions(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rec.Code)
 
-	var responses []TransactionResponse
-	err := json.NewDecoder(rec.Body).Decode(&responses)
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(responses))
+	expectedJSON := `[
+		{
+			"id": 1,
+			"date": "2024-01-15T00:00:00Z",
+			"description": "Grocery store",
+			"amount": "$50.00",
+			"bank": "Chase",
+			"category": "groceries"
+		},
+		{
+			"id": 2,
+			"date": "2024-01-16T00:00:00Z",
+			"description": "Coffee shop",
+			"amount": "£5.00",
+			"bank": "Barclays",
+			"category": null
+		}
+	]`
 
-	assert.Equal(t, int32(1), responses[0].ID)
-	assert.Equal(t, "Grocery store", responses[0].Description)
-	assert.Equal(t, "$50.00", responses[0].Amount)
-	assert.Equal(t, "Chase", responses[0].Bank)
-	assert.NotNil(t, responses[0].Category)
-	assert.Equal(t, category, *responses[0].Category)
-
-	assert.Equal(t, int32(2), responses[1].ID)
-	assert.Equal(t, "£5.00", responses[1].Amount)
-	assert.Nil(t, responses[1].Category)
+	assert.JSONEq(t, expectedJSON, rec.Body.String())
 }
 
 func TestListTransactions_DatabaseError(t *testing.T) {
@@ -165,12 +173,24 @@ func TestListTransactions_CategoryNullable(t *testing.T) {
 	handler := NewListTransactionsHandler(mock)
 	handler(rec, req)
 
-	var responses []TransactionResponse
-	json.NewDecoder(rec.Body).Decode(&responses)
+	expectedJSON := `[
+		{
+			"id": 1,
+			"date": "2024-01-15T00:00:00Z",
+			"description": "With category",
+			"amount": "$10.00",
+			"bank": "Test Bank",
+			"category": "transport"
+		},
+		{
+			"id": 2,
+			"date": "2024-01-16T00:00:00Z",
+			"description": "Without category",
+			"amount": "$20.00",
+			"bank": "Test Bank",
+			"category": null
+		}
+	]`
 
-	assert.Equal(t, int32(1), responses[0].ID)
-	assert.NotNil(t, responses[0].Category)
-	assert.Equal(t, category, *responses[0].Category)
-	assert.Equal(t, int32(2), responses[1].ID)
-	assert.Nil(t, responses[1].Category)
+	assert.JSONEq(t, expectedJSON, rec.Body.String())
 }

@@ -10,6 +10,7 @@ import (
 
 type Querier interface {
 	CreateTransaction(ctx context.Context, arg CreateTransactionParams) (Transaction, error)
+	CreateTransactionsBatch(ctx context.Context, arg []CreateTransactionsBatchParams) (int64, error)
 	DeleteTransaction(ctx context.Context, id int32) error
 	GetTransaction(ctx context.Context, id int32) (Transaction, error)
 	ListTransactions(ctx context.Context) ([]Transaction, error)
