@@ -12,20 +12,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/kushturner/finances/internal/upload"
+	"github.com/kushturner/finances/internal/transaction"
 	"github.com/stretchr/testify/assert"
 )
-
-type mockUploadService struct {
-	uploadFunc func(ctx context.Context, bankType string, csvFile io.Reader) (int64, error)
-}
-
-func (m *mockUploadService) UploadTransactions(ctx context.Context, bankType string, csvFile io.Reader) (int64, error) {
-	if m.uploadFunc != nil {
-		return m.uploadFunc(ctx, bankType, csvFile)
-	}
-	return 0, nil
-}
 
 func createMultipartRequest(t *testing.T, csvContent string, bankType string) *http.Request {
 	body := &bytes.Buffer{}
@@ -56,9 +45,9 @@ func TestUploadTransactionsHandler_Success_Nationwide(t *testing.T) {
 "14 Jan 2026","Direct Credit","SALARY","","£2000.00","£3184.56"
 `
 
-	mock := &mockUploadService{
-		uploadFunc: func(ctx context.Context, bankType string, csvFile io.Reader) (int64, error) {
-			assert.Equal(t, "nationwide", bankType)
+	mock := &mockTransactionService{
+		importFromCSVFunc: func(ctx context.Context, parser transaction.Parser, csvFile io.Reader) (int64, error) {
+			assert.NotNil(t, parser)
 			return 2, nil
 		},
 	}
@@ -83,9 +72,9 @@ func TestUploadTransactionsHandler_Success_Amex(t *testing.T) {
 14/01/2026,PAYMENT RECEIVED,MR TEST,-12345,-100.00,,PAYMENT RECEIVED,,,,,'AT456',
 `
 
-	mock := &mockUploadService{
-		uploadFunc: func(ctx context.Context, bankType string, csvFile io.Reader) (int64, error) {
-			assert.Equal(t, "amex", bankType)
+	mock := &mockTransactionService{
+		importFromCSVFunc: func(ctx context.Context, parser transaction.Parser, csvFile io.Reader) (int64, error) {
+			assert.NotNil(t, parser)
 			return 2, nil
 		},
 	}
@@ -107,13 +96,9 @@ func TestUploadTransactionsHandler_Success_Amex(t *testing.T) {
 func TestUploadTransactionsHandler_InvalidBankType(t *testing.T) {
 	csvContent := "some,csv,data\n"
 
-	mock := &mockUploadService{
-		uploadFunc: func(ctx context.Context, bankType string, csvFile io.Reader) (int64, error) {
-			return 0, fmt.Errorf("%w: unsupported bank type", upload.ErrInvalidBankType)
-		},
-	}
+	mock := &mockTransactionService{}
 
-	req := createMultipartRequest(t, csvContent, "invalid")
+	req := createMultipartRequest(t, csvContent, "invalid_bank")
 	rec := httptest.NewRecorder()
 
 	handler := NewUploadTransactionsHandler(mock)
@@ -124,11 +109,11 @@ func TestUploadTransactionsHandler_InvalidBankType(t *testing.T) {
 	var response ErrorResponse
 	err := json.NewDecoder(rec.Body).Decode(&response)
 	assert.NoError(t, err)
-	assert.Contains(t, response.Error, "Upload failed")
+	assert.Contains(t, response.Error, "Invalid bank type")
 }
 
 func TestUploadTransactionsHandler_MissingFile(t *testing.T) {
-	mock := &mockUploadService{}
+	mock := &mockTransactionService{}
 
 	req := httptest.NewRequest(http.MethodPost, "/transactions/upload?bank=nationwide", nil)
 	req.Header.Set("Content-Type", "multipart/form-data")
@@ -149,9 +134,9 @@ func TestUploadTransactionsHandler_CSVParsingError(t *testing.T) {
 "invalid date","Payment to","TEST","£50.00","","£1000.00"
 `
 
-	mock := &mockUploadService{
-		uploadFunc: func(ctx context.Context, bankType string, csvFile io.Reader) (int64, error) {
-			return 0, fmt.Errorf("%w: invalid date format", upload.ErrParseFailure)
+	mock := &mockTransactionService{
+		importFromCSVFunc: func(ctx context.Context, parser transaction.Parser, csvFile io.Reader) (int64, error) {
+			return 0, fmt.Errorf("%w: invalid date format", transaction.ErrParseFailure)
 		},
 	}
 
@@ -178,8 +163,8 @@ func TestUploadTransactionsHandler_DatabaseError(t *testing.T) {
 "15 Jan 2026","Payment to","TEST","£50.00","","£1000.00"
 `
 
-	mock := &mockUploadService{
-		uploadFunc: func(ctx context.Context, bankType string, csvFile io.Reader) (int64, error) {
+	mock := &mockTransactionService{
+		importFromCSVFunc: func(ctx context.Context, parser transaction.Parser, csvFile io.Reader) (int64, error) {
 			return 0, errors.New("failed to save transactions: database connection failed")
 		},
 	}
@@ -207,7 +192,7 @@ func TestUploadTransactionsHandler_MissingBankParameter(t *testing.T) {
 "15 Jan 2026","Payment to","TEST","£50.00","","£1000.00"
 `
 
-	mock := &mockUploadService{}
+	mock := &mockTransactionService{}
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
@@ -239,8 +224,8 @@ func TestUploadTransactionsHandler_MissingBankParameter(t *testing.T) {
 func TestUploadTransactionsHandler_EmptyCSVFile(t *testing.T) {
 	csvContent := ""
 
-	mock := &mockUploadService{
-		uploadFunc: func(ctx context.Context, bankType string, csvFile io.Reader) (int64, error) {
+	mock := &mockTransactionService{
+		importFromCSVFunc: func(ctx context.Context, parser transaction.Parser, csvFile io.Reader) (int64, error) {
 			return 0, nil
 		},
 	}
