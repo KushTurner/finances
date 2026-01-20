@@ -17,3 +17,6 @@ This project is a finances tracker that allows me to upload my bank statements a
 # Testing
 - Many Unit Tests
 - Couple of integration Tests
+
+# Code reviews
+- This is a personal project so code does not have to be industry standard, but it should be readable and maintainable.
