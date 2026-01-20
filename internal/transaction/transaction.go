@@ -1,13 +1,16 @@
 package transaction
 
-import "time"
+import (
+	"time"
+
+	"github.com/Rhymond/go-money"
+)
 
 type Transaction struct {
 	ID          int32
 	Date        time.Time
 	Description string
-	Amount      int64
-	Currency    string
+	Amount      *money.Money
 	Bank        string
 	Category    *string
 	CreatedAt   time.Time

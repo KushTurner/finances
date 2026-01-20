@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Rhymond/go-money"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/kushturner/finances/internal/db"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +29,8 @@ func TestTransactionFromDB_WithValidCategory(t *testing.T) {
 	assert.NotNil(t, result.Category)
 	assert.Equal(t, categoryStr, *result.Category)
 	assert.Equal(t, dbTx.ID, result.ID)
-	assert.Equal(t, dbTx.Amount, result.Amount)
+	assert.Equal(t, dbTx.Amount, result.Amount.Amount())
+	assert.Equal(t, dbTx.Currency, result.Amount.Currency().Code)
 }
 
 func TestTransactionFromDB_WithNullCategory(t *testing.T) {
@@ -54,8 +56,7 @@ func TestTransactionToDB_WithCategory(t *testing.T) {
 	tx := Transaction{
 		Date:        time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC),
 		Description: "Test transaction",
-		Amount:      5000,
-		Currency:    "USD",
+		Amount:      money.New(5000, "USD"),
 		Bank:        "Chase",
 		Category:    &categoryStr,
 	}
@@ -64,15 +65,15 @@ func TestTransactionToDB_WithCategory(t *testing.T) {
 
 	assert.True(t, result.Category.Valid)
 	assert.Equal(t, categoryStr, result.Category.String)
-	assert.Equal(t, tx.Amount, result.Amount)
+	assert.Equal(t, int64(5000), result.Amount)
+	assert.Equal(t, "USD", result.Currency)
 }
 
 func TestTransactionToDB_WithNilCategory(t *testing.T) {
 	tx := Transaction{
 		Date:        time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC),
 		Description: "Test transaction",
-		Amount:      5000,
-		Currency:    "USD",
+		Amount:      money.New(5000, "USD"),
 		Bank:        "Chase",
 		Category:    nil,
 	}

@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"github.com/Rhymond/go-money"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/kushturner/finances/internal/db"
 )
@@ -15,8 +16,7 @@ func TransactionFromDB(dbTx db.Transaction) Transaction {
 		ID:          dbTx.ID,
 		Date:        dbTx.Date.Time,
 		Description: dbTx.Description,
-		Amount:      dbTx.Amount,
-		Currency:    dbTx.Currency,
+		Amount:      money.New(dbTx.Amount, dbTx.Currency),
 		Bank:        dbTx.Bank,
 		Category:    category,
 		CreatedAt:   dbTx.CreatedAt.Time,
@@ -28,8 +28,8 @@ func TransactionToDB(tx Transaction) db.CreateTransactionParams {
 	return db.CreateTransactionParams{
 		Date:        pgtype.Date{Time: tx.Date, Valid: true},
 		Description: tx.Description,
-		Amount:      tx.Amount,
-		Currency:    tx.Currency,
+		Amount:      tx.Amount.Amount(),
+		Currency:    tx.Amount.Currency().Code,
 		Bank:        tx.Bank,
 		Category:    pgtype.Text{String: stringOrEmpty(tx.Category), Valid: tx.Category != nil},
 	}
