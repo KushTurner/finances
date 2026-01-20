@@ -28,3 +28,7 @@ RETURNING *;
 -- name: DeleteTransaction :exec
 DELETE FROM transactions
 WHERE id = $1;
+
+-- name: CreateTransactionsBatch :copyfrom
+INSERT INTO transactions (date, description, amount, currency, bank, category)
+VALUES ($1, $2, $3, $4, $5, $6);

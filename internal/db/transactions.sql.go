@@ -52,6 +52,15 @@ func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionPa
 	return i, err
 }
 
+type CreateTransactionsBatchParams struct {
+	Date        pgtype.Date
+	Description string
+	Amount      int64
+	Currency    string
+	Bank        string
+	Category    pgtype.Text
+}
+
 const deleteTransaction = `-- name: DeleteTransaction :exec
 DELETE FROM transactions
 WHERE id = $1

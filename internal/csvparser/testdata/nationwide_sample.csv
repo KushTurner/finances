@@ -1,0 +1,10 @@
+"Account Name:","Debit ****12345"
+"Account Balance:","£1234.56"
+"Available Balance: ","£1234.56"
+
+"Date","Transaction type","Description","Paid out","Paid in","Balance"
+"15 Jan 2026","Payment to","TEST PAYEE","£50.00","","£1184.56"
+"14 Jan 2026","Contactless Payment","TEST MERCHANT LONDON GB APPLEPAY 1234","£10.50","","£1174.06"
+"13 Jan 2026","Standing order","TEST STANDING ORDER","£100.00","","£1063.56"
+"12 Jan 2026","Direct Debit","TEST UTILITY COMPANY","£75.25","","£988.31"
+"11 Jan 2026","Direct Credit","SALARY PAYMENT","","£2000.00","£2988.31"
