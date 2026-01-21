@@ -4,17 +4,12 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"strconv"
 	"strings"
-	"time"
-
-	"github.com/Rhymond/go-money"
-	"github.com/kushturner/finances/internal/transaction"
 )
 
 type AmexParser struct{}
 
-func (p *AmexParser) Parse(r io.Reader) ([]transaction.Transaction, error) {
+func (p *AmexParser) Parse(r io.Reader) ([]TransactionRow, error) {
 	reader := csv.NewReader(r)
 
 	headers, err := reader.Read()
@@ -31,7 +26,7 @@ func (p *AmexParser) Parse(r io.Reader) ([]transaction.Transaction, error) {
 		return nil, fmt.Errorf("required column not found in CSV headers")
 	}
 
-	var transactions []transaction.Transaction
+	var transactions []TransactionRow
 
 	for {
 		row, err := reader.Read()
@@ -46,33 +41,15 @@ func (p *AmexParser) Parse(r io.Reader) ([]transaction.Transaction, error) {
 			return nil, fmt.Errorf("row has fewer columns than expected")
 		}
 
-		dateStr := row[dateIdx]
-		description := row[descriptionIdx]
-		amountStr := row[amountIdx]
-
-		parsedDate, err := time.Parse("02/01/2006", dateStr)
-		if err != nil {
-			return nil, fmt.Errorf("parsing date '%s': %w", dateStr, err)
+		category := ""
+		if categoryIdx != -1 && len(row) > categoryIdx {
+			category = strings.TrimSpace(row[categoryIdx])
 		}
 
-		amountFloat, err := strconv.ParseFloat(amountStr, 64)
-		if err != nil {
-			return nil, fmt.Errorf("parsing amount '%s': %w", amountStr, err)
-		}
-		amountCents := int64(amountFloat * 100)
-
-		var category *string
-		if categoryIdx != -1 && len(row) > categoryIdx && row[categoryIdx] != "" {
-			trimmed := strings.TrimSpace(row[categoryIdx])
-			if trimmed != "" {
-				category = &trimmed
-			}
-		}
-
-		transactions = append(transactions, transaction.Transaction{
-			Date:        parsedDate,
-			Description: description,
-			Amount:      money.New(amountCents, "GBP"),
+		transactions = append(transactions, TransactionRow{
+			Date:        row[dateIdx],
+			Description: row[descriptionIdx],
+			Amount:      row[amountIdx],
 			Bank:        "amex",
 			Category:    category,
 		})

@@ -25,6 +25,7 @@ This project is a finances tracker that allows me to upload my bank statements a
 - Many Unit Tests
 - Couple of integration Tests
 - Use Testify for assertions
+- Avoid using multiple asserts in a single test
 
 # Code reviews
 - This is a personal project so code does not have to be industry standard, but it should be readable and maintainable.

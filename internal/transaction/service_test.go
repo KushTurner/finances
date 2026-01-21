@@ -3,8 +3,6 @@ package transaction
 import (
 	"context"
 	"errors"
-	"io"
-	"strings"
 	"testing"
 	"time"
 
@@ -18,17 +16,6 @@ type mockQuerier struct {
 	transactions                []db.Transaction
 	err                         error
 	createTransactionsBatchFunc func(ctx context.Context, arg []db.CreateTransactionsBatchParams) (int64, error)
-}
-
-type mockParser struct {
-	parseFunc func(r io.Reader) ([]Transaction, error)
-}
-
-func (m *mockParser) Parse(r io.Reader) ([]Transaction, error) {
-	if m.parseFunc != nil {
-		return m.parseFunc(r)
-	}
-	return nil, nil
 }
 
 func (m *mockQuerier) ListTransactions(ctx context.Context) ([]db.Transaction, error) {
@@ -58,7 +45,7 @@ func (m *mockQuerier) CreateTransactionsBatch(ctx context.Context, arg []db.Crea
 	return 0, nil
 }
 
-func (m *mockQuerier) WithTx(tx interface{}) db.Querier {
+func (m *mockQuerier) WithTx(tx any) db.Querier {
 	return m
 }
 
@@ -183,7 +170,7 @@ func TestService_GetAllTransactions_CategoryHandling(t *testing.T) {
 	assert.Nil(t, transactions[1].Category)
 }
 
-func TestService_ImportFromCSV_Success_Nationwide(t *testing.T) {
+func TestService_AddTransactions_Success(t *testing.T) {
 	mockQuerier := &mockQuerier{
 		createTransactionsBatchFunc: func(ctx context.Context, arg []db.CreateTransactionsBatchParams) (int64, error) {
 			assert.Equal(t, 2, len(arg))
@@ -192,81 +179,31 @@ func TestService_ImportFromCSV_Success_Nationwide(t *testing.T) {
 		},
 	}
 
-	parser := &mockParser{
-		parseFunc: func(r io.Reader) ([]Transaction, error) {
-			return []Transaction{
-				{Bank: "nationwide", Description: "Coffee Shop", Amount: money.New(500, "GBP")},
-				{Bank: "nationwide", Description: "Grocery Store", Amount: money.New(5000, "GBP")},
-			}, nil
-		},
+	service := NewService(mockQuerier)
+	transactions := []Transaction{
+		{Bank: "nationwide", Description: "Coffee Shop", Amount: money.New(500, "GBP")},
+		{Bank: "nationwide", Description: "Grocery Store", Amount: money.New(5000, "GBP")},
 	}
 
-	service := NewService(mockQuerier)
-	count, err := service.ImportFromCSV(context.Background(), parser, strings.NewReader(""))
+	count, err := service.AddTransactions(context.Background(), transactions)
 
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), count)
 }
 
-func TestService_ImportFromCSV_Success_Amex(t *testing.T) {
-	mockQuerier := &mockQuerier{
-		createTransactionsBatchFunc: func(ctx context.Context, arg []db.CreateTransactionsBatchParams) (int64, error) {
-			assert.Equal(t, 2, len(arg))
-			assert.Equal(t, "amex", arg[0].Bank)
-			return int64(len(arg)), nil
-		},
-	}
-
-	parser := &mockParser{
-		parseFunc: func(r io.Reader) ([]Transaction, error) {
-			return []Transaction{
-				{Bank: "amex", Description: "Restaurant", Amount: money.New(-2550, "GBP")},
-				{Bank: "amex", Description: "Grocery Store", Amount: money.New(-5000, "GBP")},
-			}, nil
-		},
-	}
-
-	service := NewService(mockQuerier)
-	count, err := service.ImportFromCSV(context.Background(), parser, strings.NewReader(""))
-
-	assert.NoError(t, err)
-	assert.Equal(t, int64(2), count)
-}
-
-func TestService_ImportFromCSV_CSVParsingError(t *testing.T) {
-	mockQuerier := &mockQuerier{}
-
-	parser := &mockParser{
-		parseFunc: func(r io.Reader) ([]Transaction, error) {
-			return nil, errors.New("invalid date format")
-		},
-	}
-
-	service := NewService(mockQuerier)
-	count, err := service.ImportFromCSV(context.Background(), parser, strings.NewReader(""))
-
-	assert.Error(t, err)
-	assert.Equal(t, int64(0), count)
-	assert.ErrorIs(t, err, ErrParseFailure)
-}
-
-func TestService_ImportFromCSV_DatabaseError(t *testing.T) {
+func TestService_AddTransactions_DatabaseError(t *testing.T) {
 	mockQuerier := &mockQuerier{
 		createTransactionsBatchFunc: func(ctx context.Context, arg []db.CreateTransactionsBatchParams) (int64, error) {
 			return 0, errors.New("database connection failed")
 		},
 	}
 
-	parser := &mockParser{
-		parseFunc: func(r io.Reader) ([]Transaction, error) {
-			return []Transaction{
-				{Bank: "amex", Description: "Test", Amount: money.New(-1000, "GBP")},
-			}, nil
-		},
+	service := NewService(mockQuerier)
+	transactions := []Transaction{
+		{Bank: "amex", Description: "Test", Amount: money.New(-1000, "GBP")},
 	}
 
-	service := NewService(mockQuerier)
-	count, err := service.ImportFromCSV(context.Background(), parser, strings.NewReader(""))
+	count, err := service.AddTransactions(context.Background(), transactions)
 
 	assert.Error(t, err)
 	assert.Equal(t, int64(0), count)
@@ -274,7 +211,7 @@ func TestService_ImportFromCSV_DatabaseError(t *testing.T) {
 	assert.Contains(t, err.Error(), "database connection failed")
 }
 
-func TestService_ImportFromCSV_EmptyCSV(t *testing.T) {
+func TestService_AddTransactions_EmptySlice(t *testing.T) {
 	mockQuerier := &mockQuerier{
 		createTransactionsBatchFunc: func(ctx context.Context, arg []db.CreateTransactionsBatchParams) (int64, error) {
 			assert.Equal(t, 0, len(arg))
@@ -282,14 +219,8 @@ func TestService_ImportFromCSV_EmptyCSV(t *testing.T) {
 		},
 	}
 
-	parser := &mockParser{
-		parseFunc: func(r io.Reader) ([]Transaction, error) {
-			return []Transaction{}, nil
-		},
-	}
-
 	service := NewService(mockQuerier)
-	count, err := service.ImportFromCSV(context.Background(), parser, strings.NewReader(""))
+	count, err := service.AddTransactions(context.Background(), []Transaction{})
 
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), count)

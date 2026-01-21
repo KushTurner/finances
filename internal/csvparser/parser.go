@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"io"
 	"strings"
-
-	"github.com/kushturner/finances/internal/transaction"
 )
 
 type Parser interface {
-	Parse(r io.Reader) ([]transaction.Transaction, error)
+	Parse(r io.Reader) ([]TransactionRow, error)
 }
 
 func GetParser(bankType string) (Parser, error) {
@@ -21,4 +19,12 @@ func GetParser(bankType string) (Parser, error) {
 	default:
 		return nil, fmt.Errorf("unsupported bank type: %s", bankType)
 	}
+}
+
+type TransactionRow struct {
+	Date        string
+	Description string
+	Amount      string
+	Bank        string
+	Category    string
 }
