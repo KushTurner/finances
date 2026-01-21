@@ -6,8 +6,10 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/kushturner/finances/internal/csvparser"
 	"github.com/kushturner/finances/internal/db"
 	"github.com/kushturner/finances/internal/server"
+	"github.com/kushturner/finances/internal/transaction"
 	"github.com/kushturner/finances/migrations"
 )
 
@@ -30,7 +32,10 @@ func main() {
 	log.Println("Connected to database")
 
 	querier := db.New(conn)
-	r := server.NewRouter(querier)
+	transactionService := transaction.NewService(querier)
+	parserService := csvparser.NewService()
+
+	r := server.NewRouter(transactionService, parserService)
 
 	log.Println("Starting server on :8080")
 	if err := http.ListenAndServe(":8080", r); err != nil {
