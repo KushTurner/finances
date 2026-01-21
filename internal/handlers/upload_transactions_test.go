@@ -123,7 +123,7 @@ func TestUploadTransactionsHandler_ParsingError(t *testing.T) {
 		},
 	}
 
-	req := createMultipartRequest(t, csvContent, "nationwide")
+	req := createMultipartRequest(t, csvContent, "amex")
 	rec := httptest.NewRecorder()
 
 	handler := NewUploadTransactionsHandler(mockTxService, mockParser)
@@ -163,12 +163,12 @@ func TestUploadTransactionsHandler_DatabaseError(t *testing.T) {
 	mockParser := &mockParserService{
 		parseFunc: func(r io.Reader, bankType string) ([]transaction.Transaction, error) {
 			return []transaction.Transaction{
-				{Bank: "nationwide", Description: "TEST", Amount: money.New(-5000, "GBP")},
+				{Bank: "amex", Description: "TEST", Amount: money.New(2550, "GBP")},
 			}, nil
 		},
 	}
 
-	req := createMultipartRequest(t, csvContent, "nationwide")
+	req := createMultipartRequest(t, csvContent, "amex")
 	rec := httptest.NewRecorder()
 
 	handler := NewUploadTransactionsHandler(mockTxService, mockParser)

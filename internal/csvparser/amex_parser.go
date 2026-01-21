@@ -4,12 +4,17 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
+	"time"
+
+	"github.com/Rhymond/go-money"
+	"github.com/kushturner/finances/internal/transaction"
 )
 
 type AmexParser struct{}
 
-func (p *AmexParser) Parse(r io.Reader) ([]TransactionRow, error) {
+func (p *AmexParser) Parse(r io.Reader) ([]transaction.Transaction, error) {
 	reader := csv.NewReader(r)
 
 	headers, err := reader.Read()
@@ -26,9 +31,9 @@ func (p *AmexParser) Parse(r io.Reader) ([]TransactionRow, error) {
 		return nil, fmt.Errorf("required column not found in CSV headers")
 	}
 
-	var transactions []TransactionRow
+	var transactions []transaction.Transaction
 
-	for {
+	for rowNum := 1; ; rowNum++ {
 		row, err := reader.Read()
 		if err == io.EOF {
 			break
@@ -41,19 +46,46 @@ func (p *AmexParser) Parse(r io.Reader) ([]TransactionRow, error) {
 			return nil, fmt.Errorf("row has fewer columns than expected")
 		}
 
-		category := ""
-		if categoryIdx != -1 && len(row) > categoryIdx {
-			category = strings.TrimSpace(row[categoryIdx])
+		date, err := time.Parse("02/01/2006", row[dateIdx])
+		if err != nil {
+			return nil, fmt.Errorf("row %d: parsing date '%s': %w", rowNum, row[dateIdx], err)
 		}
 
-		transactions = append(transactions, TransactionRow{
-			Date:        row[dateIdx],
+		amount, err := parseAmount(row[amountIdx])
+		if err != nil {
+			return nil, fmt.Errorf("row %d: parsing amount '%s': %w", rowNum, row[amountIdx], err)
+		}
+
+		var category *string
+		if categoryIdx != -1 && len(row) > categoryIdx {
+			cat := strings.TrimSpace(row[categoryIdx])
+			if cat != "" {
+				category = &cat
+			}
+		}
+
+		transactions = append(transactions, transaction.Transaction{
+			Date:        date,
 			Description: row[descriptionIdx],
-			Amount:      row[amountIdx],
+			Amount:      amount,
 			Bank:        "amex",
 			Category:    category,
 		})
 	}
 
 	return transactions, nil
+}
+
+func parseAmount(amountStr string) (*money.Money, error) {
+	cleaned := strings.ReplaceAll(amountStr, "£", "")
+	cleaned = strings.ReplaceAll(cleaned, ",", "")
+	cleaned = strings.TrimSpace(cleaned)
+
+	amountFloat, err := strconv.ParseFloat(cleaned, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	amountCents := int64(amountFloat * 100)
+	return money.New(amountCents, "GBP"), nil
 }

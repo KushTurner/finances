@@ -4,13 +4,33 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/kushturner/finances/internal/transaction"
 )
 
-type Parser interface {
-	Parse(r io.Reader) ([]TransactionRow, error)
+type Service interface {
+	Parse(r io.Reader, bankType string) ([]transaction.Transaction, error)
 }
 
-func GetParser(bankType string) (Parser, error) {
+type service struct{}
+
+func NewService() Service {
+	return &service{}
+}
+
+func (s *service) Parse(r io.Reader, bankType string) ([]transaction.Transaction, error) {
+	parser, err := getParser(bankType)
+	if err != nil {
+		return nil, err
+	}
+	return parser.Parse(r)
+}
+
+type parser interface {
+	Parse(r io.Reader) ([]transaction.Transaction, error)
+}
+
+func getParser(bankType string) (parser, error) {
 	switch strings.ToLower(bankType) {
 	case "nationwide":
 		return &NationwideParser{}, nil
@@ -19,12 +39,4 @@ func GetParser(bankType string) (Parser, error) {
 	default:
 		return nil, fmt.Errorf("unsupported bank type: %s", bankType)
 	}
-}
-
-type TransactionRow struct {
-	Date        string
-	Description string
-	Amount      string
-	Bank        string
-	Category    string
 }

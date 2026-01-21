@@ -4,11 +4,14 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"time"
+
+	"github.com/kushturner/finances/internal/transaction"
 )
 
 type NationwideParser struct{}
 
-func (p *NationwideParser) Parse(r io.Reader) ([]TransactionRow, error) {
+func (p *NationwideParser) Parse(r io.Reader) ([]transaction.Transaction, error) {
 	reader := csv.NewReader(r)
 	reader.FieldsPerRecord = -1
 
@@ -46,9 +49,9 @@ func (p *NationwideParser) Parse(r io.Reader) ([]TransactionRow, error) {
 		return nil, fmt.Errorf("required column not found in CSV headers")
 	}
 
-	var transactions []TransactionRow
+	var transactions []transaction.Transaction
 
-	for {
+	for rowNum := 1; ; rowNum++ {
 		row, err := reader.Read()
 		if err == io.EOF {
 			break
@@ -61,20 +64,30 @@ func (p *NationwideParser) Parse(r io.Reader) ([]TransactionRow, error) {
 			return nil, fmt.Errorf("row has fewer columns than expected")
 		}
 
+		date, err := time.Parse("02 Jan 2006", row[dateIdx])
+		if err != nil {
+			return nil, fmt.Errorf("row %d: parsing date '%s': %w", rowNum, row[dateIdx], err)
+		}
+
 		paidOut := row[paidOutIdx]
 		paidIn := row[paidInIdx]
 
-		amount := paidIn
+		amountStr := paidIn
 		if paidOut != "" {
-			amount = "-" + paidOut
+			amountStr = "-" + paidOut
 		}
 
-		transactions = append(transactions, TransactionRow{
-			Date:        row[dateIdx],
+		amount, err := parseAmount(amountStr)
+		if err != nil {
+			return nil, fmt.Errorf("row %d: parsing amount '%s': %w", rowNum, amountStr, err)
+		}
+
+		transactions = append(transactions, transaction.Transaction{
+			Date:        date,
 			Description: row[descriptionIdx],
 			Amount:      amount,
 			Bank:        "nationwide",
-			Category:    "",
+			Category:    nil,
 		})
 	}
 
