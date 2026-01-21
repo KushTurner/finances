@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/kushturner/finances/internal/csvparser"
+	"github.com/kushturner/finances/internal/parser"
 	"github.com/kushturner/finances/internal/transaction"
 )
 
@@ -19,7 +19,7 @@ type ErrorResponse struct {
 	Details string `json:"details,omitempty"`
 }
 
-func NewUploadTransactionsHandler(transactionService transaction.Service) http.HandlerFunc {
+func NewUploadTransactionsHandler(transactionService transaction.Service, parserService parser.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseMultipartForm(10 << 20); err != nil {
 			respondWithError(w, http.StatusBadRequest, "Failed to parse multipart form", err.Error())
@@ -32,12 +32,6 @@ func NewUploadTransactionsHandler(transactionService transaction.Service) http.H
 			return
 		}
 
-		parser, err := csvparser.GetParser(bankType)
-		if err != nil {
-			respondWithError(w, http.StatusBadRequest, "Invalid bank type", err.Error())
-			return
-		}
-
 		file, _, err := r.FormFile("file")
 		if err != nil {
 			respondWithError(w, http.StatusBadRequest, "Failed to get file from form", err.Error())
@@ -45,7 +39,13 @@ func NewUploadTransactionsHandler(transactionService transaction.Service) http.H
 		}
 		defer file.Close()
 
-		count, err := transactionService.ImportFromCSV(r.Context(), parser, file)
+		transactions, err := parserService.Parse(file, bankType)
+		if err != nil {
+			respondWithError(w, http.StatusBadRequest, "Failed to parse CSV file", err.Error())
+			return
+		}
+
+		count, err := transactionService.AddTransactions(r.Context(), transactions)
 		if err != nil {
 			statusCode := determineStatusCode(err)
 			respondWithError(w, statusCode, "Upload failed", err.Error())

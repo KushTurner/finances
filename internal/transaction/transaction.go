@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"io"
 	"time"
 
 	"github.com/Rhymond/go-money"
@@ -16,8 +15,4 @@ type Transaction struct {
 	Category    *string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
-}
-
-type Parser interface {
-	Parse(r io.Reader) ([]Transaction, error)
 }

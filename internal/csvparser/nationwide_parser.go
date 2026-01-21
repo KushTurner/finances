@@ -4,17 +4,11 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"strconv"
-	"strings"
-	"time"
-
-	"github.com/Rhymond/go-money"
-	"github.com/kushturner/finances/internal/transaction"
 )
 
 type NationwideParser struct{}
 
-func (p *NationwideParser) Parse(r io.Reader) ([]transaction.Transaction, error) {
+func (p *NationwideParser) Parse(r io.Reader) ([]TransactionRow, error) {
 	reader := csv.NewReader(r)
 	reader.FieldsPerRecord = -1
 
@@ -52,7 +46,7 @@ func (p *NationwideParser) Parse(r io.Reader) ([]transaction.Transaction, error)
 		return nil, fmt.Errorf("required column not found in CSV headers")
 	}
 
-	var transactions []transaction.Transaction
+	var transactions []TransactionRow
 
 	for {
 		row, err := reader.Read()
@@ -67,37 +61,20 @@ func (p *NationwideParser) Parse(r io.Reader) ([]transaction.Transaction, error)
 			return nil, fmt.Errorf("row has fewer columns than expected")
 		}
 
-		dateStr := row[dateIdx]
-		description := row[descriptionIdx]
 		paidOut := row[paidOutIdx]
 		paidIn := row[paidInIdx]
 
-		parsedDate, err := time.Parse("02 Jan 2006", dateStr)
-		if err != nil {
-			return nil, fmt.Errorf("parsing date '%s': %w", dateStr, err)
-		}
-
-		var amountCents int64
+		amount := paidIn
 		if paidOut != "" {
-			amount, err := parseAmount(paidOut)
-			if err != nil {
-				return nil, fmt.Errorf("parsing paid out amount: %w", err)
-			}
-			amountCents = -amount
-		} else if paidIn != "" {
-			amount, err := parseAmount(paidIn)
-			if err != nil {
-				return nil, fmt.Errorf("parsing paid in amount: %w", err)
-			}
-			amountCents = amount
+			amount = "-" + paidOut
 		}
 
-		transactions = append(transactions, transaction.Transaction{
-			Date:        parsedDate,
-			Description: description,
-			Amount:      money.New(amountCents, "GBP"),
+		transactions = append(transactions, TransactionRow{
+			Date:        row[dateIdx],
+			Description: row[descriptionIdx],
+			Amount:      amount,
 			Bank:        "nationwide",
-			Category:    nil,
+			Category:    "",
 		})
 	}
 
@@ -111,19 +88,6 @@ func findColumnIndex(headers []string, columnName string) int {
 		}
 	}
 	return -1
-}
-
-func parseAmount(amountStr string) (int64, error) {
-	cleaned := strings.ReplaceAll(amountStr, "£", "")
-	cleaned = strings.ReplaceAll(cleaned, ",", "")
-	cleaned = strings.TrimSpace(cleaned)
-
-	amount, err := strconv.ParseFloat(cleaned, 64)
-	if err != nil {
-		return 0, err
-	}
-
-	return int64(amount * 100), nil
 }
 
 func max(nums ...int) int {
