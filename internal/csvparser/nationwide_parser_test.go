@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -19,23 +20,23 @@ func TestNationwideParser_Parse_ValidCSV(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 5, len(transactions))
 
-	assert.Equal(t, "15 Jan 2026", transactions[0].Date)
+	assert.Equal(t, time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC), transactions[0].Date)
 	assert.Equal(t, "TEST PAYEE", transactions[0].Description)
-	assert.Equal(t, "-£50.00", transactions[0].Amount)
+	assert.Equal(t, int64(-5000), transactions[0].Amount.Amount())
 	assert.Equal(t, "nationwide", transactions[0].Bank)
-	assert.Equal(t, "", transactions[0].Category)
+	assert.Nil(t, transactions[0].Category)
 
 	assert.Equal(t, "TEST MERCHANT LONDON GB APPLEPAY 1234", transactions[1].Description)
-	assert.Equal(t, "-£10.50", transactions[1].Amount)
+	assert.Equal(t, int64(-1050), transactions[1].Amount.Amount())
 
 	assert.Equal(t, "TEST STANDING ORDER", transactions[2].Description)
-	assert.Equal(t, "-£100.00", transactions[2].Amount)
+	assert.Equal(t, int64(-10000), transactions[2].Amount.Amount())
 
 	assert.Equal(t, "TEST UTILITY COMPANY", transactions[3].Description)
-	assert.Equal(t, "-£75.25", transactions[3].Amount)
+	assert.Equal(t, int64(-7525), transactions[3].Amount.Amount())
 
 	assert.Equal(t, "SALARY PAYMENT", transactions[4].Description)
-	assert.Equal(t, "£2000.00", transactions[4].Amount)
+	assert.Equal(t, int64(200000), transactions[4].Amount.Amount())
 }
 
 func TestNationwideParser_Parse_MissingColumns(t *testing.T) {

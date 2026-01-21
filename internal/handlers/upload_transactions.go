@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/kushturner/finances/internal/parser"
+	"github.com/kushturner/finances/internal/csvparser"
 	"github.com/kushturner/finances/internal/transaction"
 )
 
@@ -19,7 +19,7 @@ type ErrorResponse struct {
 	Details string `json:"details,omitempty"`
 }
 
-func NewUploadTransactionsHandler(transactionService transaction.Service, parserService parser.Service) http.HandlerFunc {
+func NewUploadTransactionsHandler(transactionService transaction.Service, parserService csvparser.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseMultipartForm(10 << 20); err != nil {
 			respondWithError(w, http.StatusBadRequest, "Failed to parse multipart form", err.Error())
