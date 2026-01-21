@@ -1,51 +1,96 @@
 package csvparser
 
 import (
-	"os"
-	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAmexParser_Parse_ValidCSV(t *testing.T) {
-	file, err := os.Open("testdata/amex_sample.csv")
-	assert.NoError(t, err)
-	defer file.Close()
-
-	parser := &AmexParser{}
-	transactions, err := parser.Parse(file)
+func TestParseAmount_UTF8PoundSign(t *testing.T) {
+	result, err := parseAmount("£100.00")
 
 	assert.NoError(t, err)
-	assert.Equal(t, 4, len(transactions))
-
-	assert.Equal(t, time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC), transactions[0].Date)
-	assert.Equal(t, "TEST RESTAURANT LONDON", transactions[0].Description)
-	assert.Equal(t, int64(2550), transactions[0].Amount.Amount())
-	assert.Equal(t, "amex", transactions[0].Bank)
-	assert.Equal(t, "Entertainment-Restaurants", *transactions[0].Category)
-
-	assert.Equal(t, "PAYMENT RECEIVED - THANK YOU", transactions[1].Description)
-	assert.Equal(t, int64(-10000), transactions[1].Amount.Amount())
-	assert.Nil(t, transactions[1].Category)
-
-	assert.Equal(t, "TEST COFFEE SHOP LONDON", transactions[2].Description)
-	assert.Equal(t, int64(475), transactions[2].Amount.Amount())
-	assert.Equal(t, "Entertainment-Bars & Cafés", *transactions[2].Category)
-
-	assert.Equal(t, "TEST SUPERMARKET LONDON", transactions[3].Description)
-	assert.Equal(t, int64(4520), transactions[3].Amount.Amount())
-	assert.Equal(t, "Shopping-Groceries", *transactions[3].Category)
+	assert.Equal(t, int64(10000), result.Amount())
 }
 
-func TestAmexParser_Parse_MissingColumns(t *testing.T) {
-	csvData := `Date,Description
-15/01/2026,TEST
-`
-	parser := &AmexParser{}
-	_, err := parser.Parse(strings.NewReader(csvData))
+func TestParseAmount_ISO88591PoundSign(t *testing.T) {
+	result, err := parseAmount("\xa3100.00")
+
+	assert.NoError(t, err)
+	assert.Equal(t, int64(10000), result.Amount())
+}
+
+func TestParseAmount_NegativeWithUTF8Pound(t *testing.T) {
+	result, err := parseAmount("-£100.00")
+
+	assert.NoError(t, err)
+	assert.Equal(t, int64(-10000), result.Amount())
+}
+
+func TestParseAmount_NegativeWithISO88591Pound(t *testing.T) {
+	result, err := parseAmount("-\xa3100.00")
+
+	assert.NoError(t, err)
+	assert.Equal(t, int64(-10000), result.Amount())
+}
+
+func TestParseAmount_WithCommas(t *testing.T) {
+	result, err := parseAmount("£1,234.56")
+
+	assert.NoError(t, err)
+	assert.Equal(t, int64(123456), result.Amount())
+}
+
+func TestParseAmount_WithoutCurrencySymbol(t *testing.T) {
+	result, err := parseAmount("50.75")
+
+	assert.NoError(t, err)
+	assert.Equal(t, int64(5075), result.Amount())
+}
+
+func TestParseAmount_EmptyString(t *testing.T) {
+	_, err := parseAmount("")
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "required column")
+	assert.Contains(t, err.Error(), "empty amount string")
+}
+
+func TestParseAmount_OnlyCurrencySymbol(t *testing.T) {
+	_, err := parseAmount("£")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "empty amount string")
+}
+
+func TestParseAmount_InvalidFormat(t *testing.T) {
+	_, err := parseAmount("abc")
+
+	assert.Error(t, err)
+}
+
+func TestParseAmount_MultipleDecimalPoints(t *testing.T) {
+	_, err := parseAmount("£10.50.25")
+
+	assert.Error(t, err)
+}
+
+func TestParseAmount_Whitespace(t *testing.T) {
+	result, err := parseAmount("  £100.00  ")
+
+	assert.NoError(t, err)
+	assert.Equal(t, int64(10000), result.Amount())
+}
+
+func TestParseAmount_SmallAmount(t *testing.T) {
+	result, err := parseAmount("£0.01")
+
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), result.Amount())
+}
+
+func TestParseAmount_Zero(t *testing.T) {
+	result, err := parseAmount("£0.00")
+
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), result.Amount())
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -77,9 +78,13 @@ func (p *AmexParser) Parse(r io.Reader) ([]transaction.Transaction, error) {
 }
 
 func parseAmount(amountStr string) (*money.Money, error) {
-	cleaned := strings.ReplaceAll(amountStr, "£", "")
-	cleaned = strings.ReplaceAll(cleaned, ",", "")
+	re := regexp.MustCompile(`[^0-9.-]`)
+	cleaned := re.ReplaceAllString(amountStr, "")
 	cleaned = strings.TrimSpace(cleaned)
+
+	if cleaned == "" {
+		return nil, fmt.Errorf("empty amount string")
+	}
 
 	amountFloat, err := strconv.ParseFloat(cleaned, 64)
 	if err != nil {
