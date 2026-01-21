@@ -14,7 +14,6 @@ func NewRouter(querier db.Querier) *chi.Mux {
 	parserService := csvparser.NewService()
 	transactionService := transaction.NewService(querier)
 
-	r.Get("/ping", handlers.Ping)
 	r.Get("/transactions", handlers.NewListTransactionsHandler(transactionService))
 	r.Post("/transactions/upload", handlers.NewUploadTransactionsHandler(transactionService, parserService))
 
