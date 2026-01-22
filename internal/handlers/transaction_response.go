@@ -10,7 +10,8 @@ type TransactionResponse struct {
 	ID          int32     `json:"id"`
 	Date        time.Time `json:"date"`
 	Description string    `json:"description"`
-	Amount      string    `json:"amount"`
+	Amount      int64     `json:"amount"`
+	Currency    string    `json:"currency"`
 	Bank        string    `json:"bank"`
 	Category    *string   `json:"category"`
 }
@@ -20,7 +21,8 @@ func FromTransaction(t transaction.Transaction) TransactionResponse {
 		ID:          t.ID,
 		Date:        t.Date,
 		Description: t.Description,
-		Amount:      t.Amount.Display(),
+		Amount:      t.Amount.Amount(),
+		Currency:    t.Amount.Currency().Code,
 		Bank:        t.Bank,
 		Category:    t.Category,
 	}
