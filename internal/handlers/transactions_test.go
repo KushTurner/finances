@@ -87,7 +87,8 @@ func TestListTransactions_MultipleTransactions(t *testing.T) {
 			"id": 1,
 			"date": "2024-01-15T00:00:00Z",
 			"description": "Grocery store",
-			"amount": "$50.00",
+			"amount": 5000,
+			"currency": "USD",
 			"bank": "Chase",
 			"category": "groceries"
 		},
@@ -95,7 +96,8 @@ func TestListTransactions_MultipleTransactions(t *testing.T) {
 			"id": 2,
 			"date": "2024-01-16T00:00:00Z",
 			"description": "Coffee shop",
-			"amount": "£5.00",
+			"amount": 500,
+			"currency": "GBP",
 			"bank": "Barclays",
 			"category": null
 		}
@@ -158,7 +160,8 @@ func TestListTransactions_CategoryNullable(t *testing.T) {
 			"id": 1,
 			"date": "2024-01-15T00:00:00Z",
 			"description": "With category",
-			"amount": "$10.00",
+			"amount": 1000,
+			"currency": "USD",
 			"bank": "Test Bank",
 			"category": "transport"
 		},
@@ -166,7 +169,8 @@ func TestListTransactions_CategoryNullable(t *testing.T) {
 			"id": 2,
 			"date": "2024-01-16T00:00:00Z",
 			"description": "Without category",
-			"amount": "$20.00",
+			"amount": 2000,
+			"currency": "USD",
 			"bank": "Test Bank",
 			"category": null
 		}
