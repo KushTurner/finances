@@ -69,7 +69,7 @@ func (p *AmexParser) Parse(r io.Reader) ([]transaction.Transaction, error) {
 			Date:        date,
 			Description: row[descriptionIdx],
 			Amount:      amount,
-			Bank:        "amex",
+			Bank:        "American Express",
 			Category:    category,
 		})
 	}

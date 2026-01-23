@@ -23,7 +23,7 @@ func TestNationwideParser_Parse_ValidCSV(t *testing.T) {
 	assert.Equal(t, time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC), transactions[0].Date)
 	assert.Equal(t, "TEST PAYEE", transactions[0].Description)
 	assert.Equal(t, int64(-5000), transactions[0].Amount.Amount())
-	assert.Equal(t, "nationwide", transactions[0].Bank)
+	assert.Equal(t, "Nationwide", transactions[0].Bank)
 	assert.Nil(t, transactions[0].Category)
 
 	assert.Equal(t, "TEST MERCHANT LONDON GB APPLEPAY 1234", transactions[1].Description)

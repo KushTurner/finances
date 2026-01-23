@@ -86,7 +86,7 @@ func (p *NationwideParser) Parse(r io.Reader) ([]transaction.Transaction, error)
 			Date:        date,
 			Description: row[descriptionIdx],
 			Amount:      amount,
-			Bank:        "nationwide",
+			Bank:        "Nationwide",
 			Category:    nil,
 		})
 	}
